@@ -124,7 +124,7 @@ python main.py
     }
   ],
   "cron": "0 1 * * *",
-  "run_on_start": true,
+  "init_template_mapping": true,
   "exclude_update_library": ["Short", "Playlists", "合集"],
   "style_config": [
     {
@@ -244,18 +244,18 @@ python main.py
 
 更多 Cron 表达式的用法可以参考相关文档。
 
-### `run_on_start`节点 启动后是否立即执行
+### `init_template_mapping`节点 是否初始化媒体库映射
 
 ```json
-"run_on_start": true
+"init_template_mapping": true
 ```
 
-`run_on_start` 用于控制程序启动后是否立即执行一次媒体库封面生成任务。
+`init_template_mapping` 用于控制启动后是否根据 Jellyfin/Emby 返回的媒体库列表自动补全 `template_mapping`。已有的媒体库配置不会被覆盖，只会追加缺失的媒体库。执行一次后会自动改为 `false`。
 
-| 值    | 说明                     |
-| ----- | ------------------------ |
-| true  | 启动后立即执行一次，执行后会自动改为 false |
-| false | 启动后等待 cron 到点执行 |
+| 值    | 说明                                      |
+| ----- | ----------------------------------------- |
+| true  | 获取媒体库列表并补全 `template_mapping`   |
+| false | 不自动修改 `template_mapping`             |
 
 ### `exclude_update_library`节点 排除更新的媒体库
 

@@ -81,7 +81,9 @@ JELLYFIN_CONFIG = {
 }
 
 CRON = JSON_CONFIG.get("cron", "0 1 * * *")  # 默认每天1点执行一次
-RUN_ON_START = JSON_CONFIG.get("run_on_start", True)  # 启动后是否立即执行一次
+INIT_TEMPLATE_MAPPING = JSON_CONFIG.get(
+    "init_template_mapping", False
+)  # 启动后是否自动初始化媒体库映射
 
 EXCLUDE_LIBRARY = JSON_CONFIG.get("exclude_update_library", [])  # 排除更新的媒体库列表
 
@@ -184,24 +186,66 @@ def refresh_auth():
     return init_auth()
 
 
-def disable_run_on_start():
-    """将配置文件中的 run_on_start 自动改为 false。"""
-    global RUN_ON_START
+def disable_init_template_mapping():
+    """将配置文件中的 init_template_mapping 自动改为 false。"""
+    global INIT_TEMPLATE_MAPPING
 
-    if not RUN_ON_START:
+    if not INIT_TEMPLATE_MAPPING:
         return True
 
     try:
-        JSON_CONFIG["run_on_start"] = False
+        JSON_CONFIG["init_template_mapping"] = False
         with open(CONFIG_JSON_PATH, "w", encoding="utf-8") as f:
             json.dump(JSON_CONFIG, f, ensure_ascii=False, indent=2)
             f.write("\n")
 
-        RUN_ON_START = False
-        logger.info("已将配置项 run_on_start 自动更新为 false")
+        INIT_TEMPLATE_MAPPING = False
+        logger.info("已将配置项 init_template_mapping 自动更新为 false")
         return True
     except Exception as e:
-        logger.error(f"自动更新 run_on_start 配置失败: {e}", exc_info=True)
+        logger.error(f"自动更新 init_template_mapping 配置失败: {e}", exc_info=True)
+        return False
+
+
+def sync_template_mapping(libraries):
+    """将媒体库列表同步到 template_mapping，保留用户已配置的字段。"""
+    global TEMPLATE_MAPPING
+
+    if not libraries:
+        return True
+
+    try:
+        template_mapping = JSON_CONFIG.get("template_mapping", [])
+        existing_library_names = {
+            template.get("library_name")
+            for template in template_mapping
+            if template.get("library_name")
+        }
+
+        added_count = 0
+        for library in libraries:
+            library_name = library.get("Name")
+            if not library_name or library_name in existing_library_names:
+                continue
+
+            template_mapping.append(get_template_config(library_name))
+            existing_library_names.add(library_name)
+            added_count += 1
+
+        if added_count == 0:
+            logger.info("template_mapping 已包含当前媒体库，无需更新")
+            return True
+
+        JSON_CONFIG["template_mapping"] = template_mapping
+        with open(CONFIG_JSON_PATH, "w", encoding="utf-8") as f:
+            json.dump(JSON_CONFIG, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+
+        TEMPLATE_MAPPING = template_mapping
+        logger.info(f"已将 {added_count} 个媒体库追加到 template_mapping")
+        return True
+    except Exception as e:
+        logger.error(f"同步 template_mapping 配置失败: {e}", exc_info=True)
         return False
 
 

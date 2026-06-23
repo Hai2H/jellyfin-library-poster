@@ -19,6 +19,26 @@ from update_poster import upload_poster_workflow
 from logger import app_logger as logger
 
 
+def initialize_template_mapping():
+    """根据服务器媒体库自动补全 template_mapping。"""
+    for jellyfin_config in config.JELLYFIN_CONFIGS:
+        config.JELLYFIN_CONFIG.update(jellyfin_config)
+        logger.info("=" * 50)
+        logger.info(f"开始初始化服务器 [{jellyfin_config['SERVER_NAME']}] 媒体库映射")
+        logger.info("=" * 50)
+
+        libraries = get_libraries()
+        if not libraries:
+            logger.warning(
+                f"[{jellyfin_config['SERVER_NAME']}] 未能获取媒体库列表，跳过映射初始化"
+            )
+            continue
+
+        config.sync_template_mapping(libraries)
+
+    config.disable_init_template_mapping()
+
+
 def process_libraries():
     for jellyfin_config in config.JELLYFIN_CONFIGS:
         config.JELLYFIN_CONFIG.update(jellyfin_config)
@@ -98,6 +118,10 @@ def main():
     # 获取cron配置
     cron_expression = config.CRON
 
+    if config.INIT_TEMPLATE_MAPPING:
+        logger.info("开始执行媒体库映射初始化")
+        initialize_template_mapping()
+
     if not cron_expression:
         logger.info("未配置cron表达式，立即执行一次")
         process_libraries()
@@ -111,13 +135,11 @@ def main():
         logger.info(f"已设置定时任务: {cron_expression}")
         logger.info(f"下次执行时间: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
 
-        # 是否启动后立即执行一次
-        if config.RUN_ON_START:
+        # 是否立即执行一次
+        run_immediately = True  # 默认首次启动立即执行一次
+        if run_immediately:
             logger.info("首次启动立即执行一次")
             process_libraries()
-            config.disable_run_on_start()
-        else:
-            logger.info("已关闭首次启动立即执行，等待定时任务触发")
 
         # 进入定时循环
         logger.info("进入定时任务循环，按 Ctrl+C 退出")
