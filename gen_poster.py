@@ -715,23 +715,10 @@ def gen_poster_workflow(name):
                 255,
             )
 
-        # 根据name匹配template_mapping中的配置
-        library_ch_name = name  # 默认使用输入的name作为中文名
-        library_eng_name = ""  # 默认英文名为空
-
-        # 查找匹配的模板配置
-        matched_template = None
-        for template in config.TEMPLATE_MAPPING:
-            if template.get("library_name") == name:
-                matched_template = template
-                break
-
-        # 如果找到匹配的模板配置，使用模板中的中英文名
-        if matched_template:
-            if "library_ch_name" in matched_template:
-                library_ch_name = matched_template["library_ch_name"]
-            if "library_eng_name" in matched_template:
-                library_eng_name = matched_template["library_eng_name"]
+        # 未配置 template_mapping 时，直接使用媒体库名称生成显示文案。
+        matched_template = config.get_template_config(name)
+        library_ch_name = matched_template["library_ch_name"]
+        library_eng_name = matched_template["library_eng_name"]
         style_name = "style1"  # 假设我们需要获取的样式名称
         style_config = next(
             (style for style in config.STYLE_CONFIGS if style.get("style_name") == style_name),

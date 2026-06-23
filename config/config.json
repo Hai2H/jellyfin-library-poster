@@ -16,6 +16,7 @@
     }
   ],
   "cron": "0 1 * * *",
+  "run_on_start": true,
   "exclude_update_library": ["Short", "Playlists", "合集"],
   "style_config": [
     {

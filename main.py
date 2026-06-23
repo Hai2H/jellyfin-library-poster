@@ -111,11 +111,13 @@ def main():
         logger.info(f"已设置定时任务: {cron_expression}")
         logger.info(f"下次执行时间: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
 
-        # 是否立即执行一次
-        run_immediately = True  # 默认首次启动立即执行一次
-        if run_immediately:
+        # 是否启动后立即执行一次
+        if config.RUN_ON_START:
             logger.info("首次启动立即执行一次")
             process_libraries()
+            config.disable_run_on_start()
+        else:
+            logger.info("已关闭首次启动立即执行，等待定时任务触发")
 
         # 进入定时循环
         logger.info("进入定时任务循环，按 Ctrl+C 退出")

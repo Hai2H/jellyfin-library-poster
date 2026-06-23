@@ -124,6 +124,7 @@ python main.py
     }
   ],
   "cron": "0 1 * * *",
+  "run_on_start": true,
   "exclude_update_library": ["Short", "Playlists", "合集"],
   "style_config": [
     {
@@ -243,6 +244,19 @@ python main.py
 
 更多 Cron 表达式的用法可以参考相关文档。
 
+### `run_on_start`节点 启动后是否立即执行
+
+```json
+"run_on_start": true
+```
+
+`run_on_start` 用于控制程序启动后是否立即执行一次媒体库封面生成任务。
+
+| 值    | 说明                     |
+| ----- | ------------------------ |
+| true  | 启动后立即执行一次，执行后会自动改为 false |
+| false | 启动后等待 cron 到点执行 |
+
 ### `exclude_update_library`节点 排除更新的媒体库
 
 ```json
@@ -313,7 +327,7 @@ python main.py
 | SeriesDatePlayed     | 按系列播放日期排序 |
 | PremiereDate         | 按首映日期排序     |
 
-系统会根据这些映射为每个媒体库创建包含相应名称的自定义海报。
+`template_mapping` 可以只配置需要自定义显示名或排序方式的媒体库。未配置的媒体库会直接使用 Jellyfin/Emby 返回的媒体库名称生成海报：中文名使用媒体库名称，英文媒体库名会自动转为大写，中文媒体库名默认不显示英文名。
 
 ## 效果图
 

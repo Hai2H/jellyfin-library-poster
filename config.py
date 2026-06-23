@@ -81,10 +81,32 @@ JELLYFIN_CONFIG = {
 }
 
 CRON = JSON_CONFIG.get("cron", "0 1 * * *")  # 默认每天1点执行一次
+RUN_ON_START = JSON_CONFIG.get("run_on_start", True)  # 启动后是否立即执行一次
 
-EXCLUDE_LIBRARY = JSON_CONFIG["exclude_update_library"]  # 排除更新的媒体库列表
+EXCLUDE_LIBRARY = JSON_CONFIG.get("exclude_update_library", [])  # 排除更新的媒体库列表
 
-TEMPLATE_MAPPING = JSON_CONFIG["template_mapping"]
+TEMPLATE_MAPPING = JSON_CONFIG.get("template_mapping", [])
+
+
+def get_template_config(library_name):
+    """获取媒体库展示配置；未配置时根据媒体库名称自动生成默认值。"""
+    for template in TEMPLATE_MAPPING:
+        if template.get("library_name") == library_name:
+            return {
+                "library_name": library_name,
+                "library_ch_name": template.get("library_ch_name", library_name),
+                "library_eng_name": template.get(
+                    "library_eng_name",
+                    library_name.upper() if library_name.isascii() else "",
+                ),
+                **template,
+            }
+
+    return {
+        "library_name": library_name,
+        "library_ch_name": library_name,
+        "library_eng_name": library_name.upper() if library_name.isascii() else "",
+    }
 
 
 STYLE_CONFIGS = JSON_CONFIG.get("style_config", [{
@@ -160,6 +182,27 @@ def refresh_auth():
     """强制刷新认证信息"""
     logger.info("强制刷新认证信息")
     return init_auth()
+
+
+def disable_run_on_start():
+    """将配置文件中的 run_on_start 自动改为 false。"""
+    global RUN_ON_START
+
+    if not RUN_ON_START:
+        return True
+
+    try:
+        JSON_CONFIG["run_on_start"] = False
+        with open(CONFIG_JSON_PATH, "w", encoding="utf-8") as f:
+            json.dump(JSON_CONFIG, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+
+        RUN_ON_START = False
+        logger.info("已将配置项 run_on_start 自动更新为 false")
+        return True
+    except Exception as e:
+        logger.error(f"自动更新 run_on_start 配置失败: {e}", exc_info=True)
+        return False
 
 
 # 模块加载时不自动进行认证，改为按需认证
