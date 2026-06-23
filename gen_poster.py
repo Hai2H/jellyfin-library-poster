@@ -473,7 +473,7 @@ def get_poster_primary_color(image_path):
         # 返回默认颜色作为备选
         return [(150, 100, 50, 255)]
 
-def gen_poster_workflow(name):
+def gen_poster_workflow(name, text_only=False):
     """
     将多张电影海报排列成三列，每列三张，然后将每列作为整体旋转并放在渐变背景上
     不再依赖外部模板文件，直接生成渐变背景
@@ -500,7 +500,7 @@ def gen_poster_workflow(name):
         # 定义模板尺寸（可以根据需要调整）
         template_width = 1920  # 或者从配置中获取
         template_height = 1080  # 或者从配置中获取
-        color=  get_poster_primary_color(first_image_path)
+        color = None if text_only else get_poster_primary_color(first_image_path)
         # 创建渐变背景作为模板
         gradient_bg = create_gradient_background(template_width, template_height, name, color)
 
@@ -536,10 +536,9 @@ def gen_poster_workflow(name):
 
         # 确保至少有一张图片
         if not poster_files:
-            logger.error(
-                f"[{config.JELLYFIN_CONFIG['SERVER_NAME']}][{name}] 错误: 在 {poster_folder} 中没有找到支持的图片文件"
+            logger.info(
+                f"[{config.JELLYFIN_CONFIG['SERVER_NAME']}][{name}] 未找到可用素材，生成纯文字封面"
             )
-            return False
 
         # 限制最多处理 rows*cols 张图片
         max_posters = rows * cols

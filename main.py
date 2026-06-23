@@ -72,7 +72,9 @@ def process_libraries():
                 f"[{jellyfin_config['SERVER_NAME']}] 开始处理媒体库: {current_library} (ID: {library['Id']})"
             )
             # 2. 下载海报
-            success, count = download_posters_workflow(library["Id"], current_library)
+            success, count = download_posters_workflow(
+                library["Id"], current_library, library
+            )
             if not success:
                 logger.warning(
                     f"[{jellyfin_config['SERVER_NAME']}][{current_library}] 下载海报失败"

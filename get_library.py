@@ -38,7 +38,13 @@ def get_libraries():
                 if "Id" in item and "Name" in item:
                     # 排除在EXCLUDE_LIBRARY列表中的媒体库
                     if item["Name"] not in config.EXCLUDE_LIBRARY:
-                        libraries.append({"Id": item["Id"], "Name": item["Name"]})
+                        libraries.append(
+                            {
+                                "Id": item["Id"],
+                                "Name": item["Name"],
+                                "CollectionType": item.get("CollectionType", ""),
+                            }
+                        )
                     else:
                         logger.info(f"已排除媒体库: {item['Name']}")
 

@@ -314,6 +314,7 @@ python main.py
 | library_ch_name  | 海报的中文名称（用于海报显示） | 是   | -      |
 | library_eng_name | 海报的英文名称（用于海报显示） | 是   | -      |
 | poster_sort      | 海报的排序方式                 | 否   | -      |
+| collection_type  | 媒体库类型，初始化时自动写入；`livetv` 会按直播频道/节目获取封面 | 否   | -      |
 
 `poster_sort`参数列表
 非必填,默认`DateCreated`,这里只列出部分,其他参数可以再媒体库点击媒体库的排序方式,然后查看 url 里面 `sortBy=xxx` 参数

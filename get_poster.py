@@ -30,13 +30,22 @@ def ensure_poster_directory(poster_dir, name):
     return full_path
 
 
-def get_items(parent_id, library_name=None):
+def get_items(parent_id, library_name=None, library_info=None):
     """获取媒体项列表"""
     # 根据库名从TEMPLATE_MAPPING中获取排序方式
     sort_by = "DateCreated"  # 默认排序方式
+    include_item_types = "Movie,Series,Audio,Music,Game,Book,MusicVideo,BoxSet"
 
     if library_name:
         lib_config = config.get_template_config(library_name)
+        collection_type = (
+            (library_info or {}).get("CollectionType")
+            or lib_config.get("collection_type", "")
+        )
+
+        if collection_type == "livetv":
+            include_item_types = "LiveTvChannel,LiveTvProgram"
+
         poster_sort = lib_config.get("poster_sort")
         if poster_sort == "Random":
             random_seed = random.randint(1000000, 9999999)
@@ -48,7 +57,7 @@ def get_items(parent_id, library_name=None):
     )
     # 修改为获取用户的媒体库列表，添加Limit参数限制返回数量以避免timeout
     # 使用50作为限制，因为只需要9张海报，50个项目足够过滤和选择
-    url = f"{config.JELLYFIN_CONFIG['BASE_URL']}/Users/{config.JELLYFIN_CONFIG['USER_ID']}/Items/?ParentId={parent_id}&Recursive=true&SortBy={sort_by}&SortOrder=Descending&IncludeItemTypes=Movie,Series,Audio,Music,Game,Book,MusicVideo,BoxSet&Limit=50"
+    url = f"{config.JELLYFIN_CONFIG['BASE_URL']}/Users/{config.JELLYFIN_CONFIG['USER_ID']}/Items/?ParentId={parent_id}&Recursive=true&SortBy={sort_by}&SortOrder=Descending&IncludeItemTypes={include_item_types}&Limit=50"
     print(f"{url}")
 
     headers = {
@@ -203,7 +212,7 @@ def download_all_posters(selected_items, full_path, library_name):
     return success_count
 
 
-def download_posters_workflow(parent_id, name):
+def download_posters_workflow(parent_id, name, library_info=None):
     """
     封装整个下载海报的工作流程，供main.py调用
 
@@ -220,11 +229,13 @@ def download_posters_workflow(parent_id, name):
         full_path = ensure_poster_directory(config.POSTER_FOLDER, name)
 
         # 获取媒体项列表
-        items = get_items(parent_id, name)
+        items = get_items(parent_id, name, library_info)
         if not items:
             logger.warning(
                 f"[{config.JELLYFIN_CONFIG['SERVER_NAME']}][{name}] 没有可用的媒体封面"
             )
+            if (library_info or {}).get("CollectionType") == "livetv":
+                return True, 0
             return False, 0
 
         # 排序并选择媒体项
@@ -235,6 +246,8 @@ def download_posters_workflow(parent_id, name):
             logger.warning(
                 f"[{config.JELLYFIN_CONFIG['SERVER_NAME']}][{name}] 没有可用的媒体封面"
             )
+            if (library_info or {}).get("CollectionType") == "livetv":
+                return True, 0
             return False, 0
 
         # 下载所有海报

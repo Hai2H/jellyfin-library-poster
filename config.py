@@ -228,7 +228,12 @@ def sync_template_mapping(libraries):
             if not library_name or library_name in existing_library_names:
                 continue
 
-            template_mapping.append(get_template_config(library_name))
+            template_config = get_template_config(library_name)
+            collection_type = library.get("CollectionType")
+            if collection_type:
+                template_config["collection_type"] = collection_type
+
+            template_mapping.append(template_config)
             existing_library_names.add(library_name)
             added_count += 1
 
