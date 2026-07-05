@@ -177,3 +177,5 @@ output
 
 poster
 test.json
+webui/node_modules/
+webui/.angular/

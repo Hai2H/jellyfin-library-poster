@@ -1,0 +1,18 @@
+{
+  "/api": {
+    "target": "http://127.0.0.1:8765",
+    "secure": false
+  },
+  "/poster": {
+    "target": "http://127.0.0.1:8765",
+    "secure": false
+  },
+  "/output": {
+    "target": "http://127.0.0.1:8765",
+    "secure": false
+  },
+  "/font-file": {
+    "target": "http://127.0.0.1:8765",
+    "secure": false
+  }
+}

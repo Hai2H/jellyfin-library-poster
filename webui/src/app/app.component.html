@@ -1,0 +1,337 @@
+<div class="min-h-screen bg-slate-100 text-slate-950">
+  <header class="border-b border-slate-200 bg-white">
+    <div class="mx-auto flex max-w-[1500px] flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <h1 class="text-xl font-semibold">Jellyfin Library Poster</h1>
+        <p class="text-sm text-slate-500">封面生成、媒体库策略、TMDB 识别与 OpenList 写回</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">{{ status }}</span>
+        <button class="btn btn-quiet" type="button" (click)="loadConfig()" [disabled]="busy">刷新配置</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="mx-auto grid max-w-[1500px] gap-4 px-4 py-4 lg:grid-cols-[250px_minmax(0,1fr)]">
+    <aside class="rounded-lg border border-slate-200 bg-white p-2 shadow-soft lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)]">
+      <button
+        *ngFor="let tab of tabs"
+        type="button"
+        (click)="switchTab(tab.key)"
+        class="mb-1 grid w-full grid-cols-[minmax(0,1fr)_8px] items-center gap-3 rounded-md px-3 py-3 text-left transition"
+        [class.bg-sky-50]="active === tab.key"
+        [class.text-sky-900]="active === tab.key"
+        [class.hover:bg-slate-50]="active !== tab.key">
+        <span>
+          <span class="block text-sm font-semibold">{{ tab.label }}</span>
+          <span class="block text-xs text-slate-500">{{ tab.hint }}</span>
+        </span>
+        <span class="h-2 w-2 rounded-full" [class.bg-sky-600]="active === tab.key" [class.bg-slate-300]="active !== tab.key"></span>
+      </button>
+    </aside>
+
+    <main class="min-w-0">
+      <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 class="text-2xl font-semibold">{{ pageTitle }}</h2>
+          <p class="text-sm text-slate-500">当前所有操作都会使用后端现有 API 与本地配置文件。</p>
+        </div>
+        <span *ngIf="busy" class="text-sm font-medium text-amber-700">处理中...</span>
+      </div>
+
+      <section *ngIf="active === 'config'" class="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.8fr)]">
+        <div class="panel">
+          <div class="mb-4 flex items-center justify-between gap-3">
+            <h3 class="text-base font-semibold">服务器</h3>
+            <button class="btn btn-quiet" type="button" (click)="addServer()">添加服务器</button>
+          </div>
+          <div class="grid gap-3">
+            <div *ngFor="let server of config.jellyfin; let i = index" class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div class="mb-3 flex items-center justify-between">
+                <strong class="text-sm">服务器 {{ i + 1 }}</strong>
+                <button class="btn btn-danger" type="button" (click)="removeServer(i)">删除</button>
+              </div>
+              <div class="grid gap-3 md:grid-cols-2">
+                <label class="label">名称<input class="field" [(ngModel)]="server.server_name"></label>
+                <label class="label">类型
+                  <select class="field" [(ngModel)]="server.server_type">
+                    <option value="jellyfin">Jellyfin</option>
+                    <option value="emby">Emby</option>
+                  </select>
+                </label>
+                <label class="label">服务器地址<input class="field" [(ngModel)]="server.base_url" placeholder="http://127.0.0.1:8096"></label>
+                <label class="label">用户名<input class="field" [(ngModel)]="server.user_name"></label>
+                <label class="label">密码<input class="field" type="password" [(ngModel)]="server.password"></label>
+                <label class="flex items-center gap-2 pt-7 text-sm text-slate-700">
+                  <input type="checkbox" class="h-4 w-4 accent-sky-700" [(ngModel)]="server.update_poster">
+                  默认上传封面
+                </label>
+              </div>
+            </div>
+            <div *ngIf="!config.jellyfin.length" class="rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">还没有服务器配置</div>
+          </div>
+        </div>
+
+        <div class="grid gap-4">
+          <div class="panel">
+            <h3 class="mb-4 text-base font-semibold">全局配置</h3>
+            <div class="grid gap-3">
+              <label class="label">cron 表达式<input class="field" [(ngModel)]="config.cron" placeholder="例如 0 1 * * *"></label>
+              <label class="label">排除媒体库<input class="field" [(ngModel)]="excludeText" placeholder="用逗号分隔"></label>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <label class="label">中文字体
+                  <select class="field" [(ngModel)]="style.style_ch_font">
+                    <option *ngFor="let font of fonts" [value]="font.name">{{ font.label || font.name }}</option>
+                  </select>
+                </label>
+                <label class="label">英文字体
+                  <select class="field" [(ngModel)]="style.style_eng_font">
+                    <option *ngFor="let font of fonts" [value]="font.name">{{ font.label || font.name }}</option>
+                  </select>
+                </label>
+              </div>
+              <div class="flex flex-wrap gap-4 text-sm text-slate-700">
+                <label class="flex items-center gap-2"><input type="checkbox" class="h-4 w-4 accent-sky-700" [(ngModel)]="style.style_ch_shadow">中文阴影</label>
+                <label class="flex items-center gap-2"><input type="checkbox" class="h-4 w-4 accent-sky-700" [(ngModel)]="style.style_eng_shadow">英文阴影</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3 class="mb-4 text-base font-semibold">TMDB</h3>
+            <div class="grid gap-3">
+              <label class="label">Token<input class="field" type="password" [(ngModel)]="config.tmdb.token"></label>
+              <label class="label">语言<input class="field" [(ngModel)]="config.tmdb.language"></label>
+              <div class="flex flex-wrap gap-4 text-sm text-slate-700">
+                <label class="flex items-center gap-2"><input type="checkbox" class="h-4 w-4 accent-sky-700" [(ngModel)]="config.tmdb.use_bearer_token">Bearer Token</label>
+                <label class="flex items-center gap-2"><input type="checkbox" class="h-4 w-4 accent-sky-700" [(ngModel)]="config.tmdb.include_adult">包含成人内容</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3 class="mb-4 text-base font-semibold">OpenList</h3>
+            <div class="grid gap-3">
+              <label class="label">OpenList 地址<input class="field" [(ngModel)]="config.openlist.base_url"></label>
+              <label class="label">Token<input class="field" type="password" [(ngModel)]="config.openlist.token"></label>
+              <label class="label">默认路径<input class="field" [(ngModel)]="config.openlist.path"></label>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2">
+            <button class="btn btn-quiet" type="button" (click)="loadConfig()" [disabled]="busy">重新加载</button>
+            <button class="btn btn-primary" type="button" (click)="saveConfig()" [disabled]="busy">保存配置</button>
+          </div>
+        </div>
+      </section>
+
+      <section *ngIf="active === 'library'" class="panel">
+        <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <label class="label md:w-72">服务器
+            <select class="field" [(ngModel)]="selectedServerIndex">
+              <option *ngFor="let server of config.jellyfin; let i = index" [ngValue]="i">{{ server.server_name || server.base_url || ('服务器 ' + (i + 1)) }}</option>
+            </select>
+          </label>
+          <div class="flex gap-2">
+            <button class="btn btn-quiet" type="button" (click)="fetchLibraries('library')" [disabled]="busy">获取媒体库</button>
+            <button class="btn btn-primary" type="button" (click)="saveConfig()" [disabled]="busy">保存策略</button>
+          </div>
+        </div>
+        <div class="overflow-auto rounded-lg border border-slate-200">
+          <table class="min-w-[980px] w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50 text-left text-slate-600">
+              <tr><th class="p-3">生成</th><th class="p-3">上传</th><th class="p-3">媒体库</th><th class="p-3">类型</th><th class="p-3">中文名</th><th class="p-3">英文名</th><th class="p-3">排序策略</th></tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <tr *ngFor="let library of libraries" class="hover:bg-slate-50">
+                <td class="p-3"><input type="checkbox" class="h-4 w-4 accent-sky-700" [checked]="isLibraryEnabled(library.Name)" (change)="toggleLibraryEnabled(library.Name, $any($event.target).checked)"></td>
+                <td class="p-3"><input type="checkbox" class="h-4 w-4 accent-sky-700" [(ngModel)]="templateFor(library.Name).update_poster" (change)="updateTemplateCollection(library)"></td>
+                <td class="p-3 font-medium">{{ library.Name }}<div class="text-xs text-slate-400">{{ library.Id || '' }}</div></td>
+                <td class="p-3 text-slate-500">{{ library.CollectionType || '-' }}</td>
+                <td class="p-3"><input class="field min-w-40" [(ngModel)]="templateFor(library.Name).library_ch_name"></td>
+                <td class="p-3"><input class="field min-w-40" [(ngModel)]="templateFor(library.Name).library_eng_name"></td>
+                <td class="p-3">
+                  <select class="field min-w-56" [(ngModel)]="templateFor(library.Name).poster_sort" (change)="updateTemplateCollection(library)">
+                    <option *ngFor="let option of sortOptions" [value]="option[0]">{{ option[1] }} - {{ option[0] }}</option>
+                  </select>
+                </td>
+              </tr>
+              <tr *ngIf="!libraries.length"><td colspan="7" class="p-8 text-center text-slate-500">请先获取媒体库</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section *ngIf="active === 'run'" class="grid gap-4 xl:grid-cols-[380px_minmax(0,1fr)]">
+        <div class="panel">
+          <h3 class="mb-4 text-base font-semibold">执行</h3>
+          <div class="grid gap-3">
+            <label class="label">服务器
+              <select class="field" [(ngModel)]="selectedRunServerIndex">
+                <option *ngFor="let server of config.jellyfin; let i = index" [ngValue]="i">{{ server.server_name || server.base_url || ('服务器 ' + (i + 1)) }}</option>
+              </select>
+            </label>
+            <label class="label">媒体库
+              <select class="field h-72" multiple [ngModel]="selectedLibraryNames" (change)="updateRunSelection($event)">
+                <option *ngFor="let library of enabledLibraries" [value]="library.Name">{{ library.Name }}</option>
+              </select>
+            </label>
+            <div class="flex flex-wrap gap-4 text-sm">
+              <label class="flex items-center gap-2"><input type="checkbox" class="h-4 w-4 accent-sky-700" [(ngModel)]="forceUpload">本次执行上传</label>
+              <label class="flex items-center gap-2"><input type="checkbox" class="h-4 w-4 accent-sky-700" [(ngModel)]="selectAllRunLibraries" (change)="toggleAllRunLibraries()">全选媒体库</label>
+            </div>
+            <div class="flex gap-2">
+              <button class="btn btn-quiet" type="button" (click)="fetchLibraries('run')" [disabled]="busy">刷新列表</button>
+              <button class="btn btn-primary" type="button" (click)="startRunJob()" [disabled]="busy">开始执行</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3 class="mb-4 text-base font-semibold">日志</h3>
+          <pre class="h-96 overflow-auto rounded-md bg-slate-950 p-4 text-xs leading-5 text-slate-100">{{ runLogs }}</pre>
+        </div>
+        <div class="xl:col-span-2">
+          <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <figure *ngFor="let item of runOutputs" class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-soft">
+              <figcaption class="border-b border-slate-200 px-3 py-2 text-sm font-semibold">{{ item.library_name }}</figcaption>
+              <img class="aspect-video w-full object-cover" [src]="item.output_url" [alt]="item.library_name">
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section *ngIf="active === 'tmdb'" class="grid gap-4 xl:grid-cols-[400px_minmax(0,1fr)]">
+        <div class="panel">
+          <h3 class="mb-4 text-base font-semibold">输入</h3>
+          <div class="grid gap-3">
+            <label class="label">TMDB Token<input class="field" type="password" [(ngModel)]="config.tmdb.token"></label>
+            <label class="label">语言<input class="field" [(ngModel)]="config.tmdb.language"></label>
+            <div class="flex flex-wrap gap-4 text-sm">
+              <label class="flex items-center gap-2"><input type="checkbox" class="h-4 w-4 accent-sky-700" [(ngModel)]="config.tmdb.use_bearer_token">Bearer Token</label>
+              <label class="flex items-center gap-2"><input type="checkbox" class="h-4 w-4 accent-sky-700" [(ngModel)]="config.tmdb.include_adult">包含成人内容</label>
+            </div>
+            <label class="label">媒体标题<textarea class="field h-72 resize-y" [(ngModel)]="tmdbInput" placeholder="每行一个标题"></textarea></label>
+            <div class="flex gap-2">
+              <button class="btn btn-primary" type="button" (click)="formatTmdb()" [disabled]="busy">查询并格式化</button>
+              <button class="btn btn-quiet" type="button" (click)="clearTmdb()">清空</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <span class="text-sm text-slate-500">{{ tmdbProgress }}</span>
+            <button class="btn btn-quiet" type="button" (click)="copyTmdbResults()">复制格式化结果</button>
+          </div>
+          <div class="overflow-auto rounded-lg border border-slate-200">
+            <table class="min-w-[780px] w-full divide-y divide-slate-200 text-sm">
+              <thead class="bg-slate-50 text-left text-slate-600">
+                <tr><th class="p-3">状态</th><th class="p-3">原始输入</th><th class="p-3">格式化结果</th><th class="p-3">类型</th><th class="p-3">地区</th><th class="p-3">错误</th></tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 bg-white">
+                <tr *ngFor="let item of tmdbResults" class="hover:bg-slate-50">
+                  <td class="p-3 font-semibold" [class.text-emerald-700]="item.ok" [class.text-rose-700]="!item.ok">{{ item.ok ? '成功' : '失败' }}</td>
+                  <td class="p-3">{{ item.input || '' }}</td>
+                  <td class="p-3 font-medium">{{ item.formatted || '' }}</td>
+                  <td class="p-3">{{ item.media_label || item.media_type || '-' }}</td>
+                  <td class="p-3">{{ item.region || '-' }}</td>
+                  <td class="p-3 text-rose-700">{{ item.error || '' }}</td>
+                </tr>
+                <tr *ngIf="!tmdbResults.length"><td colspan="6" class="p-8 text-center text-slate-500">暂无结果</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel xl:col-span-2">
+          <h3 class="mb-4 text-base font-semibold">日志</h3>
+          <pre class="h-72 overflow-auto rounded-md bg-slate-950 p-4 text-xs leading-5 text-slate-100">{{ tmdbLogs }}</pre>
+        </div>
+      </section>
+
+      <section *ngIf="active === 'openlist'" class="grid gap-4">
+        <div class="panel">
+          <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_180px_minmax(0,1fr)_auto_auto] xl:items-end">
+            <label class="label">OpenList 地址<input class="field" [(ngModel)]="config.openlist.base_url"></label>
+            <label class="label">Token<input class="field" type="password" [(ngModel)]="config.openlist.token"></label>
+            <label class="label">当前路径<input class="field" [(ngModel)]="config.openlist.path"></label>
+            <button class="btn btn-quiet" type="button" (click)="testOpenlist()" [disabled]="busy">测试连接</button>
+            <button class="btn btn-primary" type="button" (click)="listOpenlist()" [disabled]="busy">读取目录</button>
+          </div>
+          <div class="mt-3 flex flex-wrap items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            <span class="h-2.5 w-2.5 rounded-full" [class.bg-emerald-600]="openlistConnected" [class.bg-rose-500]="!openlistConnected"></span>
+            <span>{{ openlistConnectionText }}</span>
+            <span>{{ openlistProgress }}</span>
+          </div>
+        </div>
+
+        <div class="grid min-h-[680px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-soft xl:h-[calc(100vh-250px)] xl:grid-cols-[280px_minmax(0,1fr)]">
+          <aside class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] border-b border-slate-200 bg-slate-50 xl:border-b-0 xl:border-r">
+            <div class="border-b border-slate-200 bg-white p-4">
+              <h3 class="text-base font-semibold">目录树</h3>
+              <p class="mt-1 text-sm text-slate-500">{{ openlistFolders.length }} 个文件夹</p>
+            </div>
+            <div class="grid min-h-0 content-start gap-1 overflow-auto p-3">
+              <button *ngFor="let item of openlistTree" class="rounded-md border px-2 py-2 text-left text-sm hover:bg-white" [class.border-sky-200]="item.path === config.openlist.path" [class.bg-sky-50]="item.path === config.openlist.path" [style.padding-left.px]="8 + treeDepth(item.path) * 12" type="button" (click)="listOpenlist(item.path)">
+                {{ item.label }}
+              </button>
+            </div>
+          </aside>
+          <div class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(180px,0.9fr)_minmax(260px,1fr)]">
+            <div class="border-b border-slate-200 p-4">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <h3 class="text-base font-semibold">当前目录</h3>
+                <div class="flex items-center gap-3">
+                  <span class="text-sm text-slate-500">已选 {{ selectedOpenlistFolders.size }}/{{ openlistFolders.length }}</span>
+                  <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="h-4 w-4 accent-sky-700" [(ngModel)]="openlistSelectAll" (change)="toggleAllOpenlistFolders()">全选</label>
+                  <button class="btn btn-primary" type="button" (click)="previewOpenlist()" [disabled]="busy">识别选中</button>
+                </div>
+              </div>
+              <div class="mt-3 flex flex-wrap items-center gap-1 text-sm text-slate-500">
+                <button *ngFor="let crumb of openlistPathParts" class="rounded-md px-2 py-1 hover:bg-slate-100" type="button" (click)="listOpenlist(crumb.path)">{{ crumb.label }}</button>
+              </div>
+            </div>
+            <div class="min-h-0 overflow-auto border-b border-slate-200 p-4">
+              <table class="min-w-[680px] w-full divide-y divide-slate-200 text-sm">
+                <thead class="bg-slate-50 text-left text-slate-600"><tr><th class="p-3">选择</th><th class="p-3">文件夹名</th><th class="p-3">路径</th></tr></thead>
+                <tbody class="divide-y divide-slate-100">
+                  <tr *ngFor="let folder of openlistFolders" class="hover:bg-slate-50">
+                    <td class="p-3"><input type="checkbox" class="h-4 w-4 accent-sky-700" [checked]="selectedOpenlistFolders.has(folder.name)" (change)="toggleOpenlistFolder(folder.name, $any($event.target).checked)"></td>
+                    <td class="p-3"><button class="font-medium text-sky-700 hover:underline" type="button" (click)="listOpenlist(folder.path)">{{ folder.name }}</button></td>
+                    <td class="p-3 text-slate-500">{{ folder.path }}</td>
+                  </tr>
+                  <tr *ngIf="!openlistFolders.length"><td colspan="3" class="p-8 text-center text-slate-500">当前目录没有文件夹</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="grid min-h-0 xl:grid-cols-[minmax(0,1fr)_340px]">
+              <div class="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] border-b border-slate-200 p-4 xl:border-b-0 xl:border-r">
+                <div class="mb-3 flex items-center justify-between gap-3">
+                  <h3 class="text-base font-semibold">识别结果</h3>
+                  <button class="btn btn-primary" type="button" (click)="renameOpenlist()" [disabled]="busy">写回选中</button>
+                </div>
+                <div class="min-h-0 overflow-auto rounded-lg border border-slate-200">
+                  <table class="min-w-[780px] w-full divide-y divide-slate-200 text-sm">
+                    <thead class="bg-slate-50 text-left text-slate-600"><tr><th class="p-3">写回</th><th class="p-3">状态</th><th class="p-3">原文件夹名</th><th class="p-3">新文件夹名</th><th class="p-3">错误</th></tr></thead>
+                    <tbody class="divide-y divide-slate-100">
+                      <tr *ngFor="let item of openlistResults" class="hover:bg-slate-50">
+                        <td class="p-3"><input type="checkbox" class="h-4 w-4 accent-sky-700" [disabled]="!item.ok" [checked]="selectedOpenlistResults.has(item.original_name)" (change)="toggleOpenlistResult(item.original_name, $any($event.target).checked)"></td>
+                        <td class="p-3 font-semibold" [class.text-emerald-700]="item.ok" [class.text-rose-700]="!item.ok">{{ item.ok ? '成功' : '失败' }}</td>
+                        <td class="p-3">{{ item.original_name }}</td>
+                        <td class="p-3"><input class="field min-w-64" [(ngModel)]="item.new_name" (input)="updateOpenlistResultName(item)"></td>
+                        <td class="p-3 text-rose-700">{{ item.error || '' }}</td>
+                      </tr>
+                      <tr *ngIf="!openlistResults.length"><td colspan="5" class="p-8 text-center text-slate-500">识别结果会显示在这里</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] p-4">
+                <h3 class="mb-3 text-base font-semibold">日志</h3>
+                <pre class="min-h-0 overflow-auto rounded-md bg-slate-950 p-4 text-xs leading-5 text-slate-100">{{ openlistLogs }}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
