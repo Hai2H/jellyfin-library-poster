@@ -1029,7 +1029,7 @@ class WebUIHandler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
-def run(host="127.0.0.1", port=8765):
+def run(host="0.0.0.0", port=8765):
     apply_runtime_config(load_config_file())
     httpd = ThreadingHTTPServer((host, port), WebUIHandler)
     print(f"WebUI running at http://{host}:{port}/", flush=True)
