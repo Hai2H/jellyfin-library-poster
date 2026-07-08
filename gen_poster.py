@@ -10,6 +10,37 @@ import colorsys
 logger = get_module_logger("gen_poster")
 
 
+def resolve_font_path(font_path, default_font_path):
+    """按配置解析字体路径，优先自定义目录，再查内置目录。"""
+    candidates = []
+    font_path = font_path or ""
+
+    if os.path.isabs(font_path):
+        candidates.append(font_path)
+    else:
+        normalized = os.path.normpath(font_path)
+        candidates.append(os.path.join(config.CURRENT_DIR, normalized))
+
+        font_name = os.path.basename(normalized)
+        if font_name:
+            candidates.append(os.path.join(config.CURRENT_DIR, "myfont", font_name))
+            candidates.append(os.path.join(config.CURRENT_DIR, "font", font_name))
+
+    candidates.append(os.path.join(config.CURRENT_DIR, "font", default_font_path))
+
+    checked = []
+    for candidate in candidates:
+        if candidate in checked:
+            continue
+        checked.append(candidate)
+        if os.path.exists(candidate):
+            return candidate
+
+    fallback = os.path.join(config.CURRENT_DIR, "font", default_font_path)
+    logger.warning(f"字体不存在:{font_path}，使用默认字体:{fallback}")
+    return fallback
+
+
 def add_shadow(img, offset=(5, 5), shadow_color=(0, 0, 0, 100), blur_radius=3):
     """
     给图片添加右侧和底部阴影
@@ -75,10 +106,7 @@ def draw_text_on_image(
     # 创建一个可绘制的图像副本
     img_copy = image.copy()
     draw = ImageDraw.Draw(img_copy)
-    font_path = os.path.join(config.CURRENT_DIR, font_path)
-    if not os.path.exists(font_path):
-        logger.warning(f"自定义字体不存在:{font_path}，使用默认字体")
-        font_path = os.path.join(config.CURRENT_DIR, "font", default_font_path)
+    font_path = resolve_font_path(font_path, default_font_path)
     font = ImageFont.truetype(font_path, font_size)
     
     # 如果启用阴影，先绘制阴影文字
@@ -127,10 +155,7 @@ def draw_multiline_text_on_image(
     # 创建一个可绘制的图像副本
     img_copy = image.copy()
     draw = ImageDraw.Draw(img_copy)
-    font_path = os.path.join(config.CURRENT_DIR, font_path)
-    if not os.path.exists(font_path):
-        logger.warning(f"自定义字体不存在:{font_path}，使用默认字体")
-        font_path = os.path.join(config.CURRENT_DIR, "font", default_font_path)
+    font_path = resolve_font_path(font_path, default_font_path)
     font = ImageFont.truetype(font_path, font_size)
 
     # 按空格分割文本
@@ -734,7 +759,7 @@ def gen_poster_workflow(name, text_only=False):
         eng_shadow_offset = style_config.get("style_eng_shadow_offset", (2, 2)) if style_config else (2, 2)
 
         # 添加中文名文字，可选添加阴影
-        fangzheng_font_path = os.path.join("myfont", style_config.get("style_ch_font"))
+        fangzheng_font_path = style_config.get("style_ch_font")
         result = draw_text_on_image(
             result, library_ch_name, (73.32, 427.34), fangzheng_font_path, "ch.ttf", 163,
             shadow_enabled=ch_shadow_enabled, shadow_offset=ch_shadow_offset
@@ -771,7 +796,7 @@ def gen_poster_workflow(name, text_only=False):
             )
 
             # 使用多行文本绘制，可选添加阴影
-            melete_font_path = os.path.join("myfont", style_config.get("style_eng_font"))
+            melete_font_path = style_config.get("style_eng_font")
             result, line_count = draw_multiline_text_on_image(
                 result,
                 library_eng_name,

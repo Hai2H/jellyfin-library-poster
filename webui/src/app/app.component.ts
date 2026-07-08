@@ -499,15 +499,25 @@ export class AppComponent implements OnDestroy {
         if (type === 'openlist') {
           this.openlistLogs = (job.logs || []).join('\n');
           this.openlistResults = job.results || this.openlistResults;
-          this.selectedOpenlistResults = new Set(
-            this.openlistResults.filter((item) => item.ok && item.changed !== false).map((item) => item.original_name)
-          );
+          if (this.openlistMode === 'preview') {
+            this.selectedOpenlistResults = new Set(
+              this.openlistResults.filter((item) => item.ok && item.changed !== false).map((item) => item.original_name)
+            );
+          }
           const okCount = (job.results || []).filter((item: OpenListResult) => item.ok).length;
           this.openlistProgress = `进度：${job.completed || 0}/${job.total || 0}，成功 ${okCount}，状态 ${job.status}`;
           this.setStatus(`OpenList 任务状态：${job.status}`);
         }
         if (job.status === 'done' || job.status === 'failed') {
           this.clearTimers();
+          if (type === 'openlist' && job.status === 'done' && this.openlistMode === 'rename') {
+            await this.refreshOpenlistAfterRename();
+            return;
+          }
+          if (type === 'openlist') {
+            this.openlistMode = '';
+            this.openlistJobId = '';
+          }
         }
       } catch (err) {
         this.setStatus(this.errorMessage(err));
@@ -517,6 +527,18 @@ export class AppComponent implements OnDestroy {
     void tick();
     const timer = window.setInterval(tick, 1000);
     this.timers.push(timer);
+  }
+
+  private async refreshOpenlistAfterRename(): Promise<void> {
+    this.openlistMode = '';
+    this.openlistJobId = '';
+    this.openlistSelectAll = false;
+    this.selectedOpenlistFolders.clear();
+    this.selectedOpenlistResults.clear();
+    this.openlistResults = [];
+    this.openlistProgress = '写回完成，正在刷新目录...';
+    await this.listOpenlist(this.config.openlist.path);
+    this.setStatus('OpenList 写回完成，目录已刷新');
   }
 
   private clearTimers(): void {

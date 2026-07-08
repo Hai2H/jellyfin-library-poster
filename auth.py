@@ -27,6 +27,9 @@ def authenticate(base_url, username, password):
     try:
         logger.info(f"正在连接服务器: {base_url}")
         response = requests.request("POST", url, headers=headers, data=payload)
+        logger.info(f"认证接口返回状态码: {response.status_code}")
+        if response.status_code >= 400:
+            logger.error(f"认证接口错误响应: {response.text[:500]}")
         response.raise_for_status()  # 检查HTTP错误
 
         data = response.json()

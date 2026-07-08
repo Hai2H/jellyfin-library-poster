@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>jellyfin-library-poster 项目可视化</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #63708a;
+      --line: #dce2ed;
+      --accent: #1d7f73;
+      --accent-soft: #e2f3ef;
+      --blue: #276ef1;
+      --blue-soft: #e8f0ff;
+      --orange: #b45f06;
+      --orange-soft: #fff1dc;
+      --shadow: 0 12px 28px rgba(23, 32, 51, .08);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 24px 18px;
+      background: #111827;
+      color: #eef2ff;
+      overflow: auto;
+    }
+
+    .brand {
+      margin-bottom: 28px;
+    }
+
+    .brand h1 {
+      margin: 0 0 8px;
+      font-size: 21px;
+      line-height: 1.25;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 0;
+      color: #bac4d8;
+      font-size: 13px;
+    }
+
+    nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    nav button {
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      padding: 11px 12px;
+      color: #d8deec;
+      background: transparent;
+      text-align: left;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    nav button:hover {
+      background: rgba(255, 255, 255, .08);
+    }
+
+    nav button.active {
+      color: #ffffff;
+      background: var(--accent);
+    }
+
+    main {
+      padding: 28px;
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .topbar h2 {
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: 0;
+    }
+
+    .topbar p {
+      max-width: 760px;
+      margin: 6px 0 0;
+      color: var(--muted);
+    }
+
+    .tools {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .tool-btn {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 12px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .tool-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .span-3 { grid-column: span 3; }
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 5; }
+    .span-6 { grid-column: span 6; }
+    .span-7 { grid-column: span 7; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+
+    .metric {
+      min-height: 118px;
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .metric span {
+      font-size: 30px;
+      font-weight: 750;
+    }
+
+    .metric p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .section-title {
+      margin: 0 0 14px;
+      font-size: 18px;
+    }
+
+    .flow {
+      display: grid;
+      gap: 10px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcff;
+    }
+
+    .step .num {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 750;
+    }
+
+    .step h3 {
+      margin: 0 0 4px;
+      font-size: 15px;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .module-map {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .module {
+      min-height: 112px;
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--blue);
+      border-radius: 8px;
+      background: #fff;
+      padding: 13px;
+    }
+
+    .module.core { border-left-color: var(--accent); }
+    .module.io { border-left-color: var(--orange); }
+
+    .module h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+
+    .module p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .diagram {
+      overflow: auto;
+      padding: 8px;
+    }
+
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .node {
+      fill: #fff;
+      stroke: var(--line);
+      stroke-width: 1.4;
+      rx: 8;
+    }
+
+    .node.accent {
+      fill: var(--accent-soft);
+      stroke: var(--accent);
+    }
+
+    .node.blue {
+      fill: var(--blue-soft);
+      stroke: var(--blue);
+    }
+
+    .node.orange {
+      fill: var(--orange-soft);
+      stroke: var(--orange);
+    }
+
+    .edge {
+      stroke: #9aa6ba;
+      stroke-width: 1.6;
+      fill: none;
+      marker-end: url(#arrow);
+    }
+
+    .label {
+      font-size: 13px;
+      fill: var(--ink);
+    }
+
+    .small {
+      font-size: 12px;
+      fill: var(--muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th {
+      color: #354057;
+      background: #eef3fb;
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: #eef2f7;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 13px;
+    }
+
+    .pill-list {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: #334155;
+      background: #eef2f7;
+      font-size: 13px;
+    }
+
+    @media (max-width: 980px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        position: static;
+        height: auto;
+      }
+
+      nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      main {
+        padding: 18px;
+      }
+
+      .span-3,
+      .span-4,
+      .span-5,
+      .span-6,
+      .span-7,
+      .span-8 {
+        grid-column: span 12;
+      }
+
+      .module-map {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        display: block;
+      }
+
+      .tools {
+        justify-content: flex-start;
+        margin-top: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <h1>jellyfin-library-poster</h1>
+        <p>项目结构、流程和数据流可视化操作台</p>
+      </div>
+      <nav aria-label="可视化视图">
+        <button class="active" data-view="overview">总览</button>
+        <button data-view="flow">执行流程</button>
+        <button data-view="modules">模块关系</button>
+        <button data-view="poster">封面生成</button>
+        <button data-view="config">配置影响</button>
+        <button data-view="runtime">运行边界</button>
+      </nav>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <div>
+          <h2 id="pageTitle">总览</h2>
+          <p id="pageDesc">这个页面把项目按可操作视图拆开：你可以在左侧切换，从入口流程一路看到模块依赖、文件产物和 Jellyfin/Emby API 边界。</p>
+        </div>
+        <div class="tools">
+          <button class="tool-btn" id="expandAll">显示总览</button>
+          <button class="tool-btn" id="printPage">打印 / 导出 PDF</button>
+        </div>
+      </div>
+
+      <section id="overview" class="view active" data-title="总览" data-desc="项目是一个 Python 定时任务：从 Jellyfin/Emby 拉取媒体库封面，合成媒体库海报，并按配置决定是否上传。">
+        <div class="grid">
+          <div class="panel metric span-3">
+            <strong>入口</strong>
+            <span>main.py</span>
+            <p>负责 cron 调度和主业务循环。</p>
+          </div>
+          <div class="panel metric span-3">
+            <strong>核心模块</strong>
+            <span>8</span>
+            <p>认证、拉库、下载、生成、上传、配置、日志。</p>
+          </div>
+          <div class="panel metric span-3">
+            <strong>默认封面</strong>
+            <span>1920x1080</span>
+            <p>由 Pillow 合成渐变背景、九宫格海报和标题。</p>
+          </div>
+          <div class="panel metric span-3">
+            <strong>运行模式</strong>
+            <span>cron</span>
+            <p>首次立即执行，之后按配置定时运行。</p>
+          </div>
+
+          <div class="panel span-7">
+            <h3 class="section-title">项目地图</h3>
+            <div class="diagram">
+              <svg viewBox="0 0 880 430" role="img" aria-label="项目地图">
+                <defs>
+                  <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L9,3 z" fill="#9aa6ba"></path>
+                  </marker>
+                </defs>
+                <rect class="node accent" x="340" y="20" width="210" height="52"></rect>
+                <text class="label" x="365" y="51">jellyfin-library-poster</text>
+
+                <path class="edge" d="M445 72 L205 118"></path>
+                <path class="edge" d="M445 72 L445 118"></path>
+                <path class="edge" d="M445 72 L680 118"></path>
+
+                <rect class="node blue" x="70" y="120" width="270" height="58"></rect>
+                <text class="label" x="92" y="145">Python runtime</text>
+                <text class="small" x="92" y="164">main/config/auth/get/poster/update/logger</text>
+
+                <rect class="node orange" x="350" y="120" width="190" height="58"></rect>
+                <text class="label" x="380" y="145">config/config.json</text>
+                <text class="small" x="380" y="164">服务器、cron、样式、映射</text>
+
+                <rect class="node" x="590" y="120" width="230" height="58"></rect>
+                <text class="label" x="630" y="145">资源与部署</text>
+                <text class="small" x="630" y="164">font / screenshot / Dockerfile</text>
+
+                <path class="edge" d="M205 178 L205 235"></path>
+                <path class="edge" d="M445 178 L445 235"></path>
+                <path class="edge" d="M705 178 L705 235"></path>
+
+                <rect class="node" x="80" y="238" width="250" height="52"></rect>
+                <text class="label" x="105" y="268">poster/&lt;library&gt;/1.jpg - 9.jpg</text>
+
+                <rect class="node" x="360" y="238" width="170" height="52"></rect>
+                <text class="label" x="396" y="268">output/*.png</text>
+
+                <rect class="node" x="600" y="238" width="210" height="52"></rect>
+                <text class="label" x="640" y="268">logs/YYYY-MM-DD.log</text>
+
+                <path class="edge" d="M205 290 L445 345"></path>
+                <path class="edge" d="M445 290 L445 345"></path>
+                <path class="edge" d="M705 290 L445 345"></path>
+
+                <rect class="node accent" x="325" y="348" width="240" height="56"></rect>
+                <text class="label" x="360" y="372">本地输出 + 可选上传</text>
+                <text class="small" x="364" y="391">由 update_poster 控制</text>
+              </svg>
+            </div>
+          </div>
+
+          <div class="panel span-5">
+            <h3 class="section-title">一眼看懂</h3>
+            <div class="flow">
+              <div class="step"><div class="num">1</div><div><h3>认证服务器</h3><p>通过用户名密码换取 Jellyfin/Emby 的用户 ID 和访问令牌。</p></div></div>
+              <div class="step"><div class="num">2</div><div><h3>遍历媒体库</h3><p>拉取媒体库列表，排除配置中不处理的库。</p></div></div>
+              <div class="step"><div class="num">3</div><div><h3>下载封面</h3><p>每个库取最多 9 张主海报，写入 <code>poster/&lt;library&gt;</code>。</p></div></div>
+              <div class="step"><div class="num">4</div><div><h3>生成并上传</h3><p>合成 <code>output/&lt;library&gt;.png</code>，按配置决定是否上传。</p></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="flow" class="view" data-title="执行流程" data-desc="从启动到 cron 循环，再到每个服务器、每个媒体库的四步流水线。">
+        <div class="grid">
+          <div class="panel span-12">
+            <h3 class="section-title">主流程</h3>
+            <div class="flow">
+              <div class="step"><div class="num">1</div><div><h3>启动</h3><p><code>python main.py</code> 后导入 <code>config.py</code>，读取 <code>config/config.json</code>。</p></div></div>
+              <div class="step"><div class="num">2</div><div><h3>初始化映射</h3><p>如果 <code>init_template_mapping</code> 为 true，先拉媒体库并补全 <code>template_mapping</code>，然后写回 false。</p></div></div>
+              <div class="step"><div class="num">3</div><div><h3>调度</h3><p>没有 cron 就立即执行一次；有 cron 则首次立即执行，并进入定时循环。</p></div></div>
+              <div class="step"><div class="num">4</div><div><h3>处理服务器</h3><p>遍历 <code>JELLYFIN_CONFIGS</code>，把当前服务器配置写入全局 <code>JELLYFIN_CONFIG</code>。</p></div></div>
+              <div class="step"><div class="num">5</div><div><h3>处理媒体库</h3><p>执行获取媒体库、下载海报、生成封面、可选上传四个阶段。</p></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="modules" class="view" data-title="模块关系" data-desc="每个 Python 文件的职责，以及它们之间的主要调用方向。">
+        <div class="panel">
+          <h3 class="section-title">模块职责</h3>
+          <div class="module-map">
+            <div class="module core"><h3>main.py</h3><p>入口、cron 调度、多服务器和多媒体库循环。</p></div>
+            <div class="module core"><h3>config.py</h3><p>读取 JSON，维护当前服务器配置和认证状态。</p></div>
+            <div class="module"><h3>auth.py</h3><p>调用认证接口，获取 User.Id 和 AccessToken。</p></div>
+            <div class="module"><h3>get_library.py</h3><p>获取媒体库列表，并按排除列表过滤。</p></div>
+            <div class="module io"><h3>get_poster.py</h3><p>获取媒体项、筛选有主图的项目、下载封面。</p></div>
+            <div class="module io"><h3>gen_poster.py</h3><p>Pillow 图像合成核心，生成最终封面。</p></div>
+            <div class="module io"><h3>update_poster.py</h3><p>读取输出图并上传回媒体库。</p></div>
+            <div class="module"><h3>logger.py</h3><p>彩色控制台日志和文件日志。</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="poster" class="view" data-title="封面生成" data-desc="gen_poster.py 的内部图像处理流水线。">
+        <div class="grid">
+          <div class="panel span-6">
+            <h3 class="section-title">生成步骤</h3>
+            <div class="flow">
+              <div class="step"><div class="num">1</div><div><h3>提取主色</h3><p>从第一张封面中提取最多 10 个常见颜色，筛选适合做背景的 HSL 颜色。</p></div></div>
+              <div class="step"><div class="num">2</div><div><h3>创建背景</h3><p>生成 1920x1080 左深右浅的渐变背景。</p></div></div>
+              <div class="step"><div class="num">3</div><div><h3>排列海报</h3><p>按 <code>315426987</code> 排序，分成三列，每张缩放为 410x610。</p></div></div>
+              <div class="step"><div class="num">4</div><div><h3>视觉处理</h3><p>圆角、阴影、整列旋转，再粘贴到背景画布。</p></div></div>
+              <div class="step"><div class="num">5</div><div><h3>绘制标题</h3><p>按 <code>template_mapping</code> 和 <code>style_config</code> 绘制中英文标题、阴影和色块。</p></div></div>
+            </div>
+          </div>
+          <div class="panel span-6">
+            <h3 class="section-title">关键参数</h3>
+            <table>
+              <tbody>
+                <tr><th>画布</th><td><code>1920 x 1080</code></td></tr>
+                <tr><th>布局</th><td><code>ROWS=3</code>, <code>COLS=3</code></td></tr>
+                <tr><th>单张尺寸</th><td><code>410 x 610</code></td></tr>
+                <tr><th>旋转角度</th><td><code>-15.8</code> 度</td></tr>
+                <tr><th>圆角</th><td><code>46.1</code></td></tr>
+                <tr><th>输出路径</th><td><code>output/&lt;library&gt;.png</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="config" class="view" data-title="配置影响" data-desc="config/config.json 中每个主要配置块会影响哪些模块和行为。">
+        <div class="panel">
+          <h3 class="section-title">配置到行为</h3>
+          <table>
+            <thead><tr><th>配置项</th><th>影响范围</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><code>jellyfin[]</code></td><td>认证、拉库、下载、上传</td><td>支持多服务器；每轮处理前把当前服务器写入 <code>JELLYFIN_CONFIG</code>。</td></tr>
+              <tr><td><code>cron</code></td><td><code>main.py</code></td><td>控制是否进入定时循环，以及下一次执行时间。</td></tr>
+              <tr><td><code>init_template_mapping</code></td><td><code>config.py</code>, <code>main.py</code></td><td>启动时自动补全媒体库映射，完成后自动写回 false。</td></tr>
+              <tr><td><code>exclude_update_library</code></td><td><code>get_library.py</code>, <code>main.py</code></td><td>过滤媒体库，并在上传阶段再次保护。</td></tr>
+              <tr><td><code>style_config</code></td><td><code>gen_poster.py</code></td><td>控制中英文字体和文字阴影。</td></tr>
+              <tr><td><code>template_mapping</code></td><td><code>get_poster.py</code>, <code>gen_poster.py</code></td><td>控制显示名称、英文名、媒体项排序方式。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="runtime" class="view" data-title="运行边界" data-desc="项目会访问的外部 API、读写的本地目录，以及最终产物。">
+        <div class="grid">
+          <div class="panel span-6">
+            <h3 class="section-title">Jellyfin / Emby API</h3>
+            <div class="pill-list">
+              <span class="pill">POST /Users/AuthenticateByName</span>
+              <span class="pill">GET /Library/MediaFolders</span>
+              <span class="pill">GET /Users/{UserId}/Items</span>
+              <span class="pill">GET /Items/{ItemId}/Images/Primary</span>
+              <span class="pill">POST /Items/{LibraryId}/Images/Primary</span>
+            </div>
+          </div>
+          <div class="panel span-6">
+            <h3 class="section-title">本地读写</h3>
+            <div class="pill-list">
+              <span class="pill">读取 config/config.json</span>
+              <span class="pill">可写回 config/config.json</span>
+              <span class="pill">写入 poster/&lt;library&gt;/*.jpg</span>
+              <span class="pill">写入 output/&lt;library&gt;.png</span>
+              <span class="pill">写入 logs/*.log</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const buttons = [...document.querySelectorAll("nav button")];
+    const views = [...document.querySelectorAll(".view")];
+    const pageTitle = document.getElementById("pageTitle");
+    const pageDesc = document.getElementById("pageDesc");
+
+    function showView(id) {
+      buttons.forEach((button) => button.classList.toggle("active", button.dataset.view === id));
+      views.forEach((view) => view.classList.toggle("active", view.id === id));
+      const active = document.getElementById(id);
+      pageTitle.textContent = active.dataset.title;
+      pageDesc.textContent = active.dataset.desc;
+      history.replaceState(null, "", "#" + id);
+    }
+
+    buttons.forEach((button) => button.addEventListener("click", () => showView(button.dataset.view)));
+
+    document.getElementById("printPage").addEventListener("click", () => window.print());
+    document.getElementById("expandAll").addEventListener("click", () => showView("overview"));
+
+    const initial = location.hash.replace("#", "");
+    if (initial && document.getElementById(initial)) {
+      showView(initial);
+    }
+  </script>
+</body>
+</html>
