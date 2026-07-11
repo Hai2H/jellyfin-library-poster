@@ -75,6 +75,8 @@ interface TmdbResult {
 
 interface OpenListConfig {
   base_url: string;
+  username: string;
+  password: string;
   token: string;
   path: string;
 }
@@ -606,7 +608,7 @@ export class AppComponent implements OnDestroy {
       style_config: [this.defaultStyle()],
       template_mapping: [],
       tmdb: { token: '', use_bearer_token: true, language: 'zh-CN', include_adult: true },
-      openlist: { base_url: '', token: '', path: '/' }
+      openlist: { base_url: '', username: '', password: '', token: '', path: '/' }
     };
   }
 

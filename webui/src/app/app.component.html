@@ -113,7 +113,9 @@
             <h3 class="mb-4 text-base font-semibold">OpenList</h3>
             <div class="grid gap-3">
               <label class="label">OpenList 地址<input class="field" [(ngModel)]="config.openlist.base_url"></label>
-              <label class="label">Token<input class="field" type="password" [(ngModel)]="config.openlist.token"></label>
+              <label class="label">账号<input class="field" [(ngModel)]="config.openlist.username"></label>
+              <label class="label">密码<input class="field" type="password" [(ngModel)]="config.openlist.password"></label>
+              <label class="label">Token（账号密码为空时使用）<input class="field" type="password" [(ngModel)]="config.openlist.token"></label>
               <label class="label">默认路径<input class="field" [(ngModel)]="config.openlist.path"></label>
             </div>
           </div>
@@ -251,7 +253,9 @@
         <div class="panel">
           <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_180px_minmax(0,1fr)_auto_auto] xl:items-end">
             <label class="label">OpenList 地址<input class="field" [(ngModel)]="config.openlist.base_url"></label>
-            <label class="label">Token<input class="field" type="password" [(ngModel)]="config.openlist.token"></label>
+            <label class="label">账号<input class="field" [(ngModel)]="config.openlist.username"></label>
+            <label class="label">密码<input class="field" type="password" [(ngModel)]="config.openlist.password"></label>
+            <label class="label">Token（可选）<input class="field" type="password" [(ngModel)]="config.openlist.token"></label>
             <label class="label">当前路径<input class="field" [(ngModel)]="config.openlist.path"></label>
             <button class="btn btn-quiet" type="button" (click)="testOpenlist()" [disabled]="busy">测试连接</button>
             <button class="btn btn-primary" type="button" (click)="listOpenlist()" [disabled]="busy">读取目录</button>

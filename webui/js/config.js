@@ -37,7 +37,9 @@ document.getElementById("pageRoot").innerHTML = `
       ${card("OpenList", `
         <div class="grid gap-4">
           ${input("OpenList 地址", "openlistBaseUrl", "", "placeholder='例如 http://127.0.0.1:5244'")}
-          ${input("Token", "openlistToken", "", "type='password'")}
+          ${input("账号", "openlistUsername", "")}
+          ${input("密码", "openlistPassword", "", "type='password'")}
+          ${input("Token（账号密码为空时使用）", "openlistToken", "", "type='password'")}
           ${input("默认路径", "openlistPath", "/")}
         </div>
       `)}
@@ -122,6 +124,8 @@ function renderForm() {
   document.getElementById("tmdbBearer").checked = tmdb.use_bearer_token !== false;
   document.getElementById("tmdbAdult").checked = tmdb.include_adult !== false;
   document.getElementById("openlistBaseUrl").value = openlist.base_url || "";
+  document.getElementById("openlistUsername").value = openlist.username || "";
+  document.getElementById("openlistPassword").value = openlist.password || "";
   document.getElementById("openlistToken").value = openlist.token || "";
   document.getElementById("openlistPath").value = openlist.path || "/";
 }
@@ -145,6 +149,8 @@ function readForm() {
   configState.openlist = {
     ...(configState.openlist || {}),
     base_url: document.getElementById("openlistBaseUrl").value.trim(),
+    username: document.getElementById("openlistUsername").value.trim(),
+    password: document.getElementById("openlistPassword").value,
     token: document.getElementById("openlistToken").value.trim(),
     path: document.getElementById("openlistPath").value.trim() || "/",
   };

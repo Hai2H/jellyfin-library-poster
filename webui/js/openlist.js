@@ -11,9 +11,11 @@ pageShell("pages/openlist.html", "OpenList", "通过 OpenList API 浏览文件�
 document.getElementById("pageRoot").innerHTML = `
   <div class="grid gap-4">
     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_180px_minmax(0,1fr)_auto_auto] xl:items-end">
+      <div class="grid gap-3 xl:grid-cols-4 xl:items-end">
         ${input("OpenList 地址", "openlistBaseUrl", "", "placeholder='例如 http://127.0.0.1:5244'")}
-        ${input("Token", "openlistToken", "", "type='password'")}
+        ${input("账号", "openlistUsername", "")}
+        ${input("密码", "openlistPassword", "", "type='password'")}
+        ${input("Token（可选）", "openlistToken", "", "type='password'")}
         ${input("当前路径", "openlistPath", "/")}
         ${button("测试连接", "openlistStatus", "blue")}
         ${button("读取目录", "openlistList", "primary")}
@@ -170,6 +172,8 @@ function readOpenlistConfig() {
   configState.openlist = {
     ...(configState.openlist || {}),
     base_url: document.getElementById("openlistBaseUrl").value.trim(),
+    username: document.getElementById("openlistUsername").value.trim(),
+    password: document.getElementById("openlistPassword").value,
     token: document.getElementById("openlistToken").value.trim(),
     path: document.getElementById("openlistPath").value.trim() || "/",
   };
@@ -179,6 +183,8 @@ async function loadPage() {
   configState = await api("/api/config");
   const openlist = configState.openlist || {};
   document.getElementById("openlistBaseUrl").value = openlist.base_url || "";
+  document.getElementById("openlistUsername").value = openlist.username || "";
+  document.getElementById("openlistPassword").value = openlist.password || "";
   document.getElementById("openlistToken").value = openlist.token || "";
   document.getElementById("openlistPath").value = openlist.path || "/";
   renderTree();

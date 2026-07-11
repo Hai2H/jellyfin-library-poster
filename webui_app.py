@@ -68,6 +68,8 @@ DEFAULT_TMDB_CONFIG = {
 
 DEFAULT_OPENLIST_CONFIG = {
     "base_url": "",
+    "username": "",
+    "password": "",
     "token": "",
     "path": "/",
 }
@@ -117,7 +119,7 @@ def normalize_openlist_config(data):
     normalized.update({
         key: value
         for key, value in openlist_config.items()
-        if key in {"base_url", "token", "path"}
+        if key in {"base_url", "username", "password", "token", "path"}
     })
     normalized["base_url"] = str(normalized.get("base_url") or "").rstrip("/")
     normalized["path"] = normalize_openlist_path(normalized.get("path") or "/")
@@ -278,10 +280,39 @@ class OpenListClient:
         self.settings = normalize_openlist_config(settings)
         if not self.settings["base_url"]:
             raise RuntimeError("未配置 OpenList 地址")
+        self._token = str(self.settings.get("token") or "").strip()
+        self._logged_in = False
+
+    def login(self):
+        if self._logged_in:
+            return self._token
+        username = str(self.settings.get("username") or "").strip()
+        password = str(self.settings.get("password") or "")
+        if not username and not password and self._token:
+            return self._token
+        if not username or not password:
+            raise RuntimeError("OpenList 账号和密码必须同时填写，或改用 Token")
+        url = f"{self.settings['base_url']}/api/auth/login"
+        response = requests.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            json={"username": username, "password": password},
+            timeout=30,
+        )
+        response.raise_for_status()
+        data = response.json()
+        if data.get("code") not in (0, 200, None):
+            raise RuntimeError(data.get("message") or data.get("msg") or "OpenList 登录失败")
+        result = data.get("data") or {}
+        self._token = str(result.get("token") or "").strip()
+        if not self._token:
+            raise RuntimeError("OpenList 登录成功，但响应中没有 Token")
+        self._logged_in = True
+        return self._token
 
     def headers(self):
         headers = {"Content-Type": "application/json"}
-        token = str(self.settings.get("token") or "").strip()
+        token = self.login()
         if token:
             headers["Authorization"] = token
         return headers
@@ -621,7 +652,7 @@ def build_openlist_config(base_data, body):
     data = normalize_config(base_data)
     override = body.get("openlist") or {}
     openlist_config = dict(data.get("openlist") or {})
-    for key in ("base_url", "token", "path"):
+    for key in ("base_url", "username", "password", "token", "path"):
         if key in override:
             openlist_config[key] = override[key]
     data["openlist"] = normalize_openlist_config(openlist_config)
