@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import json
 import logging
 import mimetypes
@@ -292,23 +293,36 @@ class OpenListClient:
             return self._token
         if not username or not password:
             raise RuntimeError("OpenList 账号和密码必须同时填写，或改用 Token")
-        url = f"{self.settings['base_url']}/api/auth/login"
-        response = requests.post(
-            url,
-            headers={"Content-Type": "application/json"},
-            json={"username": username, "password": password},
-            timeout=30,
-        )
-        response.raise_for_status()
-        data = response.json()
+        payload = {"username": username, "password": password}
+        data = self.auth_post("/api/auth/login", payload)
         if data.get("code") not in (0, 200, None):
-            raise RuntimeError(data.get("message") or data.get("msg") or "OpenList 登录失败")
+            hashed_payload = dict(payload)
+            hashed_payload["password"] = hashlib.sha256(password.encode("utf-8")).hexdigest()
+            hashed_data = self.auth_post("/api/auth/login/hash", hashed_payload)
+            if hashed_data.get("code") in (0, 200, None):
+                data = hashed_data
+            else:
+                message = data.get("message") or data.get("msg") or hashed_data.get("message") or hashed_data.get("msg")
+                raise RuntimeError(message or "OpenList 登录失败")
         result = data.get("data") or {}
         self._token = str(result.get("token") or "").strip()
         if not self._token:
             raise RuntimeError("OpenList 登录成功，但响应中没有 Token")
         self._logged_in = True
         return self._token
+
+    def auth_post(self, path, payload):
+        url = f"{self.settings['base_url']}{path}"
+        response = requests.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            json=payload,
+            timeout=30,
+        )
+        if response.status_code == 404 and path.endswith("/hash"):
+            return {"code": 404, "message": "OpenList 不支持 hash 登录接口"}
+        response.raise_for_status()
+        return response.json()
 
     def headers(self):
         headers = {"Content-Type": "application/json"}
@@ -972,12 +986,19 @@ class WebUIHandler(BaseHTTPRequestHandler):
                 data = build_openlist_config(load_config_file(), body)
                 client = OpenListClient(data["openlist"])
                 path = normalize_openlist_path(body.get("path") or data["openlist"].get("path") or "/")
-                folders = client.list_dir(path)
+                client.login()
+                path_error = ""
+                try:
+                    folders = client.list_dir(path)
+                except RuntimeError as exc:
+                    folders = []
+                    path_error = str(exc)
                 return self.send_json({
                     "ok": True,
                     "connected": True,
                     "path": path,
                     "folder_count": len(folders),
+                    "path_error": path_error,
                     "openlist": data["openlist"],
                 })
             if parsed.path == "/api/openlist/preview/jobs":

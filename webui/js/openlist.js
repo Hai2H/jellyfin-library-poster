@@ -198,7 +198,7 @@ async function testStatus() {
   const data = await api("/api/openlist/status", { method: "POST", body: JSON.stringify({ path: configState.openlist.path, openlist: configState.openlist }) });
   configState.openlist = data.openlist;
   document.getElementById("openlistPath").value = data.path || configState.openlist.path || "/";
-  document.getElementById("openlistProgress").textContent = `当前目录 ${data.folder_count || 0} 个文件夹`;
+  document.getElementById("openlistProgress").textContent = data.path_error || `当前目录 ${data.folder_count || 0} 个文件夹`;
   setConnection(true, `已连接：${configState.openlist.base_url}`);
   ensureTreePath(data.path || "/");
   renderTree();

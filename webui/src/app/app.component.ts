@@ -373,7 +373,7 @@ export class AppComponent implements OnDestroy {
 
   async testOpenlist(): Promise<void> {
     await this.withBusy(async () => {
-      const data = await this.api<{ path: string; folder_count: number; openlist: OpenListConfig }>('/api/openlist/status', {
+      const data = await this.api<{ path: string; folder_count: number; path_error?: string; openlist: OpenListConfig }>('/api/openlist/status', {
         method: 'POST',
         body: { path: this.config.openlist.path, openlist: this.config.openlist }
       });
@@ -381,7 +381,7 @@ export class AppComponent implements OnDestroy {
       this.config.openlist.path = data.path || this.config.openlist.path || '/';
       this.openlistConnected = true;
       this.openlistConnectionText = `已连接：${this.config.openlist.base_url}`;
-      this.openlistProgress = `当前目录 ${data.folder_count || 0} 个文件夹`;
+      this.openlistProgress = data.path_error || `当前目录 ${data.folder_count || 0} 个文件夹`;
       this.ensureOpenlistTree(this.config.openlist.path);
       this.setStatus('OpenList 连接正常');
     }, () => {
